@@ -32,7 +32,8 @@ router.post("/findWithin", function(req, res){
   var lat = req.body.lat;
   var lng = req.body.lng;
   var distance = req.body.distance;
-  postgeo.connect("postgres://ubuntu:exact123@localhost:5432/sg");
+  postgeo.connect("postgres://ubuntu:test123@localhost:5432/sg");
+
   postgeo.query("select round(cast(ST_Distance(st_transform(searchpoint.geom, 3414), st_transform(addr.geom, 3414)) as numeric), 1)  as distance, name, ST_AsGeoJSON(addr.geom) AS geometry from childcare addr, (select st_setsrid(st_makepoint("+ lng + ", " + lat + "),4326) as geom) searchpoint where ST_Distance(st_transform(addr.geom,3414), st_transform(searchpoint.geom,3414))<=" + distance + " order by addr.geom <-> searchpoint.geom;", 
               "geojson",
     function (data) {
