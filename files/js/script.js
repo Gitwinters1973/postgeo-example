@@ -54,7 +54,7 @@ function onMapClick(e) {
     	marker = L.marker(e.latlng).addTo(map);
     };
     
-	marker.bindPopup(e.latlng.lng+ ", " + e.latlng.lat).openPopup();
+	marker.bindPopup(e.latlng.lng+ ", " + e.latlng.lat);
 	// $.post('/findWith', e.latlng, function )
 	getResults();
 };
@@ -107,10 +107,15 @@ function getResults() {
 };
 
 function populateTable(data) {
+    
     $('#results-tab tbody > tr').remove();
     var tb = $("#results-tab tbody");
  
     var f = data.features;
+    console.log(f.length);
+    
+    $("#childcare").text(f.length + " childcare service(s)");
+    
     for (var i = 0; i < f.length; i++) {
         // creates a table row
         var row = document.createElement("tr");
