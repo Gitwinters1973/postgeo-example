@@ -2,7 +2,9 @@ var map = new L.map('mapid').setView([1.364340, 103.808939], 12);
 var popup = L.popup();
 var marker;
 var results;
+var route;
 var geodata;
+var buffer;
 
 var dayCareIcon = new L.icon({
     iconUrl: '/js/images/daycare.png',
@@ -41,17 +43,41 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={
 }).addTo(map);
 
 function onMapClick(e) {
+    
+    if (route) {
+        map.removeLayer(route);
+    };
+    
     if (marker) {
     	marker.setLatLng(e.latlng);
     } else {
     	marker = L.marker(e.latlng).addTo(map);
     };
+    
 	marker.bindPopup(e.latlng.lng+ ", " + e.latlng.lat).openPopup();
 	// $.post('/findWith', e.latlng, function )
 	getResults();
 };
 
+function redrawBuffer() {
+  
+  var distance = $("#distance").val();
+  
+  if (buffer) {
+      map.removeLayer(buffer);
+  };
+  
+  var latLng = marker.getLatLng();
+  console.log(latLng);
+  console.log(distance);
+  buffer = L.circle(latLng, distance);
+  buffer.addTo(map);
+  
+};
+
 function getResults() {
+    redrawBuffer();
+    
     var param = {
 	  lat: marker.getLatLng().lat,
 	  lng: marker.getLatLng().lng,
@@ -67,6 +93,11 @@ function getResults() {
 	   results = L.geoJson(data, {
 	        pointToLayer: function (feature, latlng) {
                 return L.circleMarker(latlng, geojsonMarkerOptions);
+                /*
+                return LabeledMarker(latlng, feature, { 
+                    markerOptions: { color: '#050' }
+                });
+                */
             },
             onEachFeature: onEachFeature
         });
@@ -83,10 +114,6 @@ function populateTable(data) {
     for (var i = 0; i < f.length; i++) {
         // creates a table row
         var row = document.createElement("tr");
-        var lat = f[i].geometry.coordinates[0];
-        var lng = f[i].geometry.coordinates[1];
-        var latlng = L.latLng(lng, lat);
-        var zoom = 18;
         
         for (var j = 0; j < 3; j++) {
           // Create a <td> element and a text node, make the text
@@ -98,10 +125,14 @@ function populateTable(data) {
             cellText = document.createTextNode(i+1);    
           };
           if (j == 1) {
-            cellText = document.createTextNode(f[i].properties.name);
+            // cellText = document.createTextNode(f[i].properties.name);
+            cellText = document.createElement("div");
+            cellText.innerHTML="<a onclick='javascript:goTo("+i+");'>" + f[i].properties.name + "</a>";
           };
           if (j == 2) {
-            cellText = document.createTextNode(f[i].properties.distance);
+            // cellText = document.createTextNode(f[i].properties.distance);
+            cellText = document.createElement("div");
+            cellText.innerHTML="<a onclick='javascript:routing("+i+");'>" + f[i].properties.distance + "</a>";
           };
           
           cell.appendChild(cellText);
@@ -113,11 +144,58 @@ function populateTable(data) {
     };
 };
 
+function routing(i) {
+    var src_lat = marker.getLatLng().lat;
+    var src_lng = marker.getLatLng().lng;
+    var f = geodata.features[i];
+    var tgt_lat = f.geometry.coordinates[1];
+    var tgt_lng = f.geometry.coordinates[0];
+    
+    var param = {
+      src_lat : src_lat,
+      src_lng : src_lng,
+      tgt_lat : tgt_lat,
+      tgt_lng : tgt_lng
+    };
+    
+    $.post( "/routing", param, function (data) {
+	   //alert(data);
+	   console.log(data);
+	  
+	   
+	   if (route) {
+	       map.removeLayer(route);
+	   };
+	   
+	   route = L.geoJson(data);
+       route.addTo(map);
+	   
+	});
+}
+
+function goTo(i) {
+    console.log("geodata.features.length: " + geodata.features.length);
+    console.log("i: " + i);
+    var f = geodata.features[i];
+    var lat = f.geometry.coordinates[0];
+    var lng = f.geometry.coordinates[1];
+    var latlng = L.latLng(lng, lat);
+    var zoom = 17;
+    
+    map.setView(latlng, zoom);
+}
+
 function onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
     if (feature.properties && feature.properties.distance) {
-        layer.bindPopup(feature.properties.name + '\n' + feature.properties.distance + 'm away');
+        layer.bindPopup(feature.properties.name + '</br>' + feature.properties.distance + 'm away');
     }
+};
+
+function updateDistance() {
+  var value = $("#slider").val();
+  $("#distance").val(value);
+  getResults();
 };
 
 map.on('click', onMapClick);

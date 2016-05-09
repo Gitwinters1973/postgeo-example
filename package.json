@@ -14,6 +14,7 @@
     "bootstrap": "^3.3.6",
     "express": "^4.13.4",
     "leaflet": "^0.7.7",
+    "leaflet-labeled-circle": "0.0.1",
     "nodemon": "^1.9.2",
     "postgeo": "^0.1.2"
   }
