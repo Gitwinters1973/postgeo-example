@@ -6,6 +6,8 @@ var route;
 var geodata;
 var buffer;
 
+google.charts.load("current", {packages:["corechart"]});
+
 var dayCareIcon = new L.icon({
     iconUrl: '/js/images/daycare.png',
     shadowUrl: '/js/images/marker-shadow.png',
@@ -68,8 +70,6 @@ function redrawBuffer() {
   };
   
   var latLng = marker.getLatLng();
-  console.log(latLng);
-  console.log(distance);
   buffer = L.circle(latLng, distance);
   buffer.addTo(map);
   
@@ -112,7 +112,6 @@ function populateTable(data) {
     var tb = $("#results-tab tbody");
  
     var f = data.features;
-    console.log(f.length);
     
     $("#childcare").text(f.length + " childcare service(s)");
     
@@ -147,6 +146,8 @@ function populateTable(data) {
         // add the row to the end of the table body
         tb.append(row);
     };
+    
+    drawChart(f);
 };
 
 function routing(i) {
@@ -165,8 +166,6 @@ function routing(i) {
     
     $.post( "/routing", param, function (data) {
 	   //alert(data);
-	   console.log(data);
-	  
 	   
 	   if (route) {
 	       map.removeLayer(route);
@@ -179,8 +178,7 @@ function routing(i) {
 }
 
 function goTo(i) {
-    console.log("geodata.features.length: " + geodata.features.length);
-    console.log("i: " + i);
+    
     var f = geodata.features[i];
     var lat = f.geometry.coordinates[0];
     var lng = f.geometry.coordinates[1];
@@ -202,5 +200,32 @@ function updateDistance() {
   $("#distance").val(value);
   getResults();
 };
+
+function drawChart(f) {
+        var count = f.length;
+        var data = [['Name', 'Distance']];
+        
+        for (var i=0; i < count; i++) {
+            data.push([
+                f[i].properties.name,
+                f[i].properties.distance
+            ]);
+        };
+
+        var options = {
+          title: 'Distance of ' + count + ' childcare services, in meters',
+          legend: { position: 'none' },
+          histogram: {
+              bucketSize: 100,
+              maxNumBuckets: 100,
+              minValue: 0
+            }
+        };
+        
+
+        var chart = new google.visualization.Histogram(document.getElementById('chart_div'));
+        var datatable = google.visualization.arrayToDataTable(data);
+        chart.draw(datatable, options);
+      }
 
 map.on('click', onMapClick);
